@@ -1,5 +1,6 @@
 const User = require("../model/User");
 const bcrypt = require("bcryptjs");
+const { findOneAndUpdate } = require("../model/User");
 
 const signup = async (req, res, next) => {
   const { name, email, password } = req.body;
@@ -30,4 +31,24 @@ const signup = async (req, res, next) => {
   return res.status(201).json({ message: user });
 };
 
+const login = async (req, res, next) => {
+  const { email, password } = req.body;
+
+  let existingUser;
+  try {
+    existingUser = await User.findOne({ email: email });
+  } catch (err) {
+    return new Error(err);
+  }
+  if (!existingUser) {
+    return res.status(400).json({ message: "User not found! Signup please" });
+  }
+
+  const isPasswordCorrect = bcrypt.compareSync(password, existingUser.password);
+  if (!isPasswordCorrect) {
+    return res.status(400).json({ message: "Invalid Email/Password" });
+  }
+  return res.status(200).json({ message: "Successfully logged in" });
+};
 exports.signup = signup;
+exports.login = login;
