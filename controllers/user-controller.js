@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { findOneAndUpdate } = require("../model/User");
 const JWT_SECRET_KEY = "MySecretKey";
+
 const signup = async (req, res, next) => {
   const { name, email, password } = req.body;
   let existingUser;
@@ -50,16 +51,26 @@ const login = async (req, res, next) => {
     return res.status(400).json({ message: "Invalid Email/Password" });
   }
   const token = jwt.sign({ id: existingUser._id }, JWT_SECRET_KEY, {
-    expiresIn: "1hr",
+    expiresIn: "30s",
   });
+
+  res.cookie(String(existingUser._id), token, {
+    path: "/",
+    expires: new Date(Date.now() + 1000 * 30),
+    httpOnly: true,
+    sameSite: "lax",
+  });
+
   return res
     .status(200)
     .json({ message: "Successfully logged in", user: existingUser, token });
 };
 
 const verifyToken = (req, res, next) => {
-  const headers = req.headers["authorization"];
-  const token = headers.split(" ")[1];
+  const cookies = req.headers.cookie;
+  const token = cookies.split("=")[1];
+  console.log(token);
+
   if (!token) {
     res.status(404).json({ message: "No token found" });
   }
